@@ -107,7 +107,7 @@ if($act == 'getorder'){   //------------success----------------//
     if(empty($_POST['data'])){
         exit(json_encode(array('code'=>"2009","res"=>"请传入必要参数")));
     }
-    write_log('assignRecords/'.date('Y-m-d').'.log', json_encode($_POST));
+    //write_log('assignRecords/'.date('Y-m-d').'.log', json_encode($_POST));
     //$js = htmlspecialchars_decode(trim(I('post.data')));
     $js = urldecode(trim($_POST['data']));
     $js = str_replace('\"','"',$js);
@@ -142,23 +142,23 @@ if($act == 'getorder'){   //------------success----------------//
             if($orderInfo){ ##订单存在
                 $cur_o_state=   $orderInfo['o_state']; ##订单当前状态
                 if(in_array($cur_o_state, array(3, 13, 14))){
-                    $code   =   1002;
+                    $code   =   '1002';
                     $codeMsg=   '订单已是完结状态'.$cur_o_state;
                     returnApiRes();
                 }
                 
                 if($cur_o_state == $new_o_state){
-                    $code   =   1002;
+                    $code   =   '1002';
                     $codeMsg=   '已存在该订单且状态一致';
                     returnApiRes();
                 }
                 
-                $update =   array('o_state'=>$new_o_state);
+                $update =   array('o_state'=>$new_o_state, 'o_u_id'=>$v['o_u_id'], 'o_u_username'=>$v['o_u_username'], 'o_u_idss'=>$v['o_u_idss']);
                 $info   =   updateData($tb, $update, array('o_ordernum'=>$ordernum));
                 if(!$info){
                     mysql_rollback();
-                    $code   =   3002;
-                    $codeMsg=   '保存订单状态失败!';
+                    $code   =   '3002';
+                    $codeMsg=   '同步订单状态失败!';
                     returnApiRes();
                 }
                 
@@ -179,7 +179,7 @@ if($act == 'getorder'){   //------------success----------------//
                 if(!$info){
                     mysql_rollback();
                     $code   =   '3001';
-                    $codeMsg=   '保存订单信息失败!';
+                    $codeMsg=   '同步订单失败!';
                     returnApiRes();
                 }
             }
@@ -200,8 +200,8 @@ if($act == 'getorder'){   //------------success----------------//
                 }
             //}
             mysql_commit();
-            $code   =   1002;
-            $codeMsg=   '保存订单信息成功!';
+            $code   =   '1002';
+            $codeMsg=   '同步订单成功!';
             returnApiRes();
         }else{
             //$arr = array("code"=>"2009","res"=>"时间必填");

@@ -102,19 +102,19 @@ if($act == 'userlist'){  //------------success----------------//
     $uid = trim($_POST['uid']);
     $click = trim($_POST['click']);
 
-    //判断当前传入的click是否是整形
-    $pos = strpos($click,'.');
-    $param = substr($click,$pos+1);
+    //点击数进一法取整
+    $param  =   ceil($click);
     //var_dump($param);exit;
+    
     //查找当前UID的用户信息
     $user = mysql_fetch_assoc(mysql_query("select * from user_tb where u_id='".$uid."'",$conn));
     if(empty($user)||$user['u_u_idss'] != $id){
         $arr = array("code"=>"2011","res"=>"此用户不是你的用户");
     }else{
-        if($click < 0||$param>0){
+        if($param < 0){
             $arr = array("code"=>"2009","res"=>"点击数不能小于0且必须为整数");
         }else{
-            $res = mysql_query("update user_tb set u_click='".$click."' where u_id='".$uid."'",$conn);
+            $res = mysql_query("update user_tb set u_click='".$param."' where u_id='".$uid."'",$conn);
             $save = mysql_affected_rows();
             if($save){
                 $arr = array("code"=>"1002","res"=>"修改成功");

@@ -176,7 +176,7 @@ function select_array($table, $field = '', $where = ''){
     }
     $field      =   $field ? array2select($field) : '*';
     $where      =   $where ? 'where '.array2where($where) : '';
-    $searchSql  =   "select $field from $table $where";;
+    $searchSql  =   "select $field from $table $where";
     $searchSql  =   mysql_query($searchSql, $conn);
     $res        =   mysql_fetch_assoc($searchSql);
     return $res;
@@ -216,7 +216,7 @@ function assignUserMoney($o_u_id, $totalMoney){
     $u_fcbl     =   $userInfo['u_fcbl']; ##获取比例
     //echo $u_fcbl."<br />";
     $u_parent_id=   $userInfo['u_parent_u_id'];
-    $userMoney[]=   array($o_u_id, $u_fcbl * $totalMoney, $userInfo['u_u_idss']);
+    $userMoney[]=   array($o_u_id, round($u_fcbl * $totalMoney, 2), $userInfo['u_u_idss']);
     if($u_level != 1){
         $times = $u_level - 1; ##循环次数
         for($i = 1; $i <= $times; $i++){
@@ -227,7 +227,7 @@ function assignUserMoney($o_u_id, $totalMoney){
             if($u_fcbl <= 0){
                 $u_fcbl = 0;
             }
-            $userMoney[]=   array($userInfo['u_id'], $u_fcbl * $totalMoney, $userInfo['u_u_idss']);
+            $userMoney[]=   array($userInfo['u_id'], round($u_fcbl * $totalMoney, 2), $userInfo['u_u_idss']);
             //echo $u_fcbl."<br />";
         }
     }
@@ -276,26 +276,46 @@ function updateUserMoney($userMoneyArr, $new_o_state, $cur_o_state, $orderInfo){
             $userInfo   =   getUserInfo(intval($o_uid));
             ####更新金额 start####
             if(!$cur_o_state){ ##新增订单更新金额
-                $field  =   $new_o_state == 12 ? 'u_wqrmoney' : 'u_allmoney';
-                $sql    =   "update $table1 set {$field} = {$field} + $money where u_id = {$o_uid}";
+                if($new_o_state == 12){
+                    $sql    =   "update $table1 set u_wqrmoney = u_wqrmoney + $money where u_id = {$o_uid}";
+                }else{
+                    $sql    =   "update $table1 set u_allmoney = u_allmoney + {$money},u_money = u_money + {$money} where u_id = {$o_uid}";
+                }
                 $info   =   mysql_query($sql, $conn);
                 if(!$info){
-                    $code   =   4001;
+                    $code   =   '4001';
                     $codeMsg=   $o_uid.'更新未确认金额失败'.$money;
                     return FALSE;
                 }
                 write_log('sql/'.date('Y-m-d').'.log', $sql);
+                
+                if(in_array($new_o_state, array(3,14))){ ##结算状态 保存月份金额记录
+                    $info   =   saveUserMonthMoney($o_uid, $money, $orderInfo['o_u_idss'], $createTime);
+                    if(!$info){
+                        $code   =   5003;
+                        $codeMsg=   '保存月度金额失败!';
+                        return false;
+                    }
+                }
             }else{ ##已存在订单更新金额
                 $wqrmoney       =   $money > $userInfo['u_wqrmoney'] ? $userInfo['u_wqrmoney'] : $money;
                 if($cur_o_state == 12 && ($new_o_state == 3 || $new_o_state == 14)){
                     $sql    =   "update $table1 set u_wqrmoney = u_wqrmoney - {$wqrmoney},u_allmoney = u_allmoney + {$money},u_money = u_money + {$money} where u_id = {$o_uid}";
+                    
+                    ##结算状态 保存月份金额记录
+                    $info   =   saveUserMonthMoney($o_uid, $money, $orderInfo['o_u_idss'], $createTime);
+                    if(!$info){
+                        $code   =   '5003';
+                        $codeMsg=   '保存月度金额失败!';
+                        return false;
+                    }
                 }elseif($cur_o_state == 12 && $new_o_state == 13){
                     $sql    =   "update $table1 set u_wqrmoney = u_wqrmoney - {$wqrmoney} where u_id = {$o_uid}";
                     $money  =   $wqrmoney;
                 }
                 $info   =   mysql_query($sql, $conn);
                 if(!$info){
-                    $code   =   4002;
+                    $code   =   '4002';
                     $codeMsg=   $o_uid.'更新余额失败'.$money;
                     return FALSE;
                 }
@@ -315,18 +335,43 @@ function updateUserMoney($userMoneyArr, $new_o_state, $cur_o_state, $orderInfo){
             $data['or_o_creattime'] =   $createTime;
             $data['or_u_idss']      =   $orderInfo['o_u_idss'];
             $data   =   array_merge($data, $where);
-            $info    =   insertData($table2, $data);
+            $info   =   insertData($table2, $data);
         }
         
         if(!$info){
-            $code   =   4003;
+            $code   =   '4003';
             $codeMsg=   $record ? '更新余额记录失败' : '保存余额记录失败!';
             return FALSE;
         }
-        
         ####添加金额变更记录 send####
+        
     }
-    
     return TRUE;
+}
+
+/**
+ * saveUserMonthMoney()
+ * 保存每月分成总记录表
+ * @param mixed $uid 用户id
+ * @param mixed $money 添加金额
+ * @param mixed $o_uid_ss 淘客ID
+ * @param mixed $createTime 订单生成时间
+ * @return
+ */
+function saveUserMonthMoney($uid, $money, $o_uid_ss, $createTime){
+    global $conn;
+    $table  =   'income_tb';
+    $month  =   date('Y-m', $createTime);
+    $where  =   array('i_y_m'=>$month, 'i_uid'=>$uid, 'i_idss'=>$o_uid_ss);
+    $res    =   select_array($table, 'i_id', $where);
+    if($res){
+        $sql    =   "update {$table} set i_money= i_money + {$money} where ".array2where($where);
+    }else{
+        $where['i_money']   =   $money;
+        $sql    =   "insert into {$table}  set ".array2sql($where);
+    }
+    //echo $sql;exit;
+    $info   =   mysql_query($sql, $conn);
+    return $info;
 }
 ?>
