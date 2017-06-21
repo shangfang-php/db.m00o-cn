@@ -268,6 +268,9 @@ function updateUserMoney($userMoneyArr, $new_o_state, $cur_o_state, $orderInfo){
     $createTime =   $orderInfo['o_creattime'];
     list($year, $month) =   explode('-', date('y-m', $createTime));
     $table2 =   'order_record_'.$year.'_'.$month.'_tb';
+    
+    $endTime    =   $orderInfo['o_endtime'] ? $orderInfo['o_endtime'] : $createTime;
+    
     foreach($userMoneyArr as $val){
         $o_uid  =   $val[0];
         $money  =   $val[1]; ##新增失败订单记录金额为0;
@@ -275,7 +278,7 @@ function updateUserMoney($userMoneyArr, $new_o_state, $cur_o_state, $orderInfo){
         if($money > 0){
             $userInfo   =   getUserInfo(intval($o_uid));
             ####更新金额 start####
-            if(!$cur_o_state){ ##新增订单更新金额
+            if(!$cur_o_state && $new_o_state != 13){ ##新增订单更新金额
                 if($new_o_state == 12){
                     $sql    =   "update $table1 set u_wqrmoney = u_wqrmoney + $money where u_id = {$o_uid}";
                 }else{
@@ -290,7 +293,7 @@ function updateUserMoney($userMoneyArr, $new_o_state, $cur_o_state, $orderInfo){
                 write_log('sql/'.date('Y-m-d').'.log', $sql);
                 
                 if(in_array($new_o_state, array(3,14))){ ##结算状态 保存月份金额记录
-                    $info   =   saveUserMonthMoney($o_uid, $money, $orderInfo['o_u_idss'], $createTime);
+                    $info   =   saveUserMonthMoney($o_uid, $money, $orderInfo['o_u_idss'], $endTime);
                     if(!$info){
                         $code   =   5003;
                         $codeMsg=   '保存月度金额失败!';
@@ -303,7 +306,7 @@ function updateUserMoney($userMoneyArr, $new_o_state, $cur_o_state, $orderInfo){
                     $sql    =   "update $table1 set u_wqrmoney = u_wqrmoney - {$wqrmoney},u_allmoney = u_allmoney + {$money},u_money = u_money + {$money} where u_id = {$o_uid}";
                     
                     ##结算状态 保存月份金额记录
-                    $info   =   saveUserMonthMoney($o_uid, $money, $orderInfo['o_u_idss'], $createTime);
+                    $info   =   saveUserMonthMoney($o_uid, $money, $orderInfo['o_u_idss'], $endTime);
                     if(!$info){
                         $code   =   '5003';
                         $codeMsg=   '保存月度金额失败!';

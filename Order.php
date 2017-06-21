@@ -107,7 +107,7 @@ if($act == 'getorder'){   //------------success----------------//
     if(empty($_POST['data'])){
         exit(json_encode(array('code'=>"2009","res"=>"请传入必要参数")));
     }
-    //write_log('assignRecords/'.date('Y-m-d').'.log', json_encode($_POST));
+    write_log('assignRecords/'.date('Y-m-d').'.log', json_encode($_POST));
     //$js = htmlspecialchars_decode(trim(I('post.data')));
     $js = urldecode(trim($_POST['data']));
     $js = str_replace('\"','"',$js);
@@ -154,6 +154,8 @@ if($act == 'getorder'){   //------------success----------------//
                 }
                 
                 $update =   array('o_state'=>$new_o_state, 'o_u_id'=>$v['o_u_id'], 'o_u_username'=>$v['o_u_username'], 'o_u_idss'=>$v['o_u_idss']);
+                $update['o_endtime'] = $v['o_endtime'] ? intval($v['o_endtime']) : 0;
+                
                 $info   =   updateData($tb, $update, array('o_ordernum'=>$ordernum));
                 if(!$info){
                     mysql_rollback();
