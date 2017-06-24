@@ -190,7 +190,7 @@ if($act == 'getorder'){   //------------success----------------//
                 ($cur_o_state == 12 && $new_o_state == 13) && ($v['o_zzyj'] = $orderInfo['o_zzyj']);
                 $userMoneyArr   =   assignOrderMoney($ordernum, $v); ##分配订单佣金
 
-                write_log('assignRecords/'.date('Y-m-d').'.log', '分配金额'.json_encode($userMoneyArr));
+                write_log('assignRecords/'.date('Y-m-d').'.log', '分配金额:'.$ordernum.':'.json_encode($userMoneyArr));
                 //write_log('assignRecords/'.date('Y-m-d').'.log', json_encode($v));
                 
                 $info           =   updateUserMoney($userMoneyArr, $new_o_state, $cur_o_state, $v);
