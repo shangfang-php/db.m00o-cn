@@ -212,25 +212,29 @@ function assignUserMoney($o_u_id, $totalMoney){
     }
     //var_dump($totalMoney);
     $userMoney  =   array();
-    $u_level    =   $userInfo['u_leve'];
+    //$u_level    =   $userInfo['u_leve'];
     $u_fcbl     =   $userInfo['u_fcbl']; ##获取比例
     //echo $u_fcbl."<br />";
     $u_parent_id=   $userInfo['u_parent_u_id'];
     $userMoney[]=   array($o_u_id, round($u_fcbl * $totalMoney, 2), $userInfo['u_u_idss']);
-    if($u_level != 1){
-        $times = $u_level - 1; ##循环次数
-        for($i = 1; $i <= $times; $i++){
-            $userInfo   =   getUserInfo(intval($u_parent_id)); ##获取上级用户信息
-            $u_parent_id=   $userInfo['u_parent_u_id'];
-            $percentField   = 'u_fcbl'.( $i + 1 );  
-            $u_fcbl     =   $userInfo[$percentField]; ##获取比例
-            if($u_fcbl <= 0){
-                $u_fcbl = 0;
-            }
-            $userMoney[]=   array($userInfo['u_id'], round($u_fcbl * $totalMoney, 2), $userInfo['u_u_idss']);
-            //echo $u_fcbl."<br />";
+    
+    $i  =   1;
+    while($i <= 2 && $u_parent_id){
+        $userInfo   =   getUserInfo(intval($u_parent_id)); ##获取上级用户信息
+        if(!$userInfo['u_u_idss']){ ##淘客的话自动退出
+            break;
         }
+        $u_parent_id=   $userInfo['u_parent_u_id'];
+        $percentField   = 'u_fcbl'.( $i + 1 );  
+        $u_fcbl     =   $userInfo[$percentField]; ##获取比例
+        if($u_fcbl <= 0){
+            $u_fcbl = 0;
+        }
+        $userMoney[]=   array($userInfo['u_id'], round($u_fcbl * $totalMoney, 2), $userInfo['u_u_idss']);
+        
+        $i++;
     }
+    
     unset($userInfo);
     return $userMoney;
 }
