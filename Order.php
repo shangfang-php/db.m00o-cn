@@ -128,7 +128,8 @@ if($act == 'getorder'){   //------------success----------------//
             /** 订单号拦截 start**/
             $ordernum   =   $v['o_ordernum'];
             $checkOrdernum  =   explode('_', $ordernum)[0];
-            if(strlen($checkOrdernum) != 17 || !preg_match('/^\d+$/', $checkOrdernum)){
+            $orderLength    =   strlen($checkOrdernum);
+            if( !in_array($orderLength, array(16, 17)) || !preg_match('/^\d+$/', $checkOrdernum)){
                 $code   =   '1002';
                 $codeMsg=   '订单编号不合法'.$ordernum;
                 returnApiRes();
