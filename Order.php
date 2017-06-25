@@ -124,15 +124,22 @@ if($act == 'getorder'){   //------------success----------------//
 
     foreach($data as $k => $v){
         if($v['o_creattime']){
-            //$year = @date("Y",$v['o_creattime']);
-//            $month = @date("m",$v['o_creattime']);
+            
+            /** 订单号拦截 start**/
+            $ordernum   =   $v['o_ordernum'];
+            $checkOrdernum  =   explode('_', $ordernum)[0];
+            if(strlen($checkOrdernum) != 17 || !preg_match('/^\d+$/', $checkOrdernum)){
+                $code   =   '1002';
+                $codeMsg=   '订单编号不合法'.$ordernum;
+                returnApiRes();
+            }
+            /** 订单号拦截 end**/
 
             $date   =   date('Y-m', $v['o_creattime']);
             list($year, $month) =   explode('-', $date);
 
             $tb = 'order_'.$year.'_'.$month.'_tb'; ##根据订单生成时间查询数据表
             
-            $ordernum   =   $v['o_ordernum'];
             $orderInfo  =   getOrderInfo($ordernum, $tb); ##获取订单信息
             
             $new_o_state=   $v['o_state']; ##订单新状态
